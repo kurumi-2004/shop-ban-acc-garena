@@ -48,6 +48,7 @@ class GameAccount(db.Model):
     account_password = db.Column(db.Text, nullable=False)
     is_sold = db.Column(db.Boolean, default=False, index=True)
     internal_notes = db.Column(db.Text)
+    images = db.Column(db.JSON, default=list)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
@@ -63,6 +64,23 @@ class GameAccount(db.Model):
             return cipher_suite.decrypt(self.account_password.encode()).decode()
         except Exception:
             return '[Lỗi giải mã]'
+    
+    def get_images(self):
+        if self.images:
+            return self.images
+        return []
+    
+    def add_image(self, image_path):
+        if self.images is None:
+            self.images = []
+        if isinstance(self.images, list):
+            self.images.append(image_path)
+        else:
+            self.images = [image_path]
+    
+    def remove_image(self, image_path):
+        if self.images and isinstance(self.images, list) and image_path in self.images:
+            self.images.remove(image_path)
     
     def __repr__(self):
         return f'<GameAccount {self.title}>'

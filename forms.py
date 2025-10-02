@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, MultipleFileField
 from wtforms import StringField, PasswordField, BooleanField, TextAreaField, FloatField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length, NumberRange
 from models import User
@@ -50,3 +51,4 @@ class AccountForm(FlaskForm):
     account_username = StringField('Tên tài khoản game')
     account_password = StringField('Mật khẩu tài khoản game')
     internal_notes = TextAreaField('Ghi chú nội bộ')
+    images = MultipleFileField('Hình ảnh tài khoản', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'webp'], 'Chỉ chấp nhận file ảnh!')])
