@@ -2,7 +2,9 @@ from flask import Flask, render_template, redirect, url_for, flash, request, jso
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import os
+import uuid
 
 from extensions import db, login_manager, migrate, cipher_suite
 
@@ -15,6 +17,8 @@ if not database_url:
     database_url = 'sqlite:///shop.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'static/uploads/accounts'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 db.init_app(app)
 migrate.init_app(app, db)
@@ -24,6 +28,20 @@ login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
 from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist
 from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_account_image(file):
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(filepath)
+        return f"uploads/accounts/{unique_filename}"
+    return None
 
 def role_required(required_role):
     def decorator(f):
@@ -310,8 +328,17 @@ def admin_add_account():
             price=form.price.data,
             account_username=encrypted_username,
             account_password=encrypted_password,
-            internal_notes=form.internal_notes.data
+            internal_notes=form.internal_notes.data,
+            images=[]
         )
+        
+        if form.images.data:
+            for image_file in form.images.data:
+                if image_file and image_file.filename:
+                    image_path = save_account_image(image_file)
+                    if image_path:
+                        account.add_image(image_path)
+        
         db.session.add(account)
         db.session.commit()
         
@@ -352,6 +379,13 @@ def admin_edit_account(account_id):
             account.account_username = cipher_suite.encrypt(form.account_username.data.encode()).decode()
         if form.account_password.data and form.account_password.data.strip():
             account.account_password = cipher_suite.encrypt(form.account_password.data.encode()).decode()
+        
+        if form.images.data:
+            for image_file in form.images.data:
+                if image_file and image_file.filename:
+                    image_path = save_account_image(image_file)
+                    if image_path:
+                        account.add_image(image_path)
         
         db.session.commit()
         

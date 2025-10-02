@@ -20,6 +20,31 @@
                 
                 <div class="account-price mb-4">{{ "{:,.0f}".format(account.price) }} ₫</div>
                 
+                {% if account.get_images() %}
+                <div class="mb-4">
+                    <h5>Hình ảnh:</h5>
+                    <div id="accountImagesCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            {% for image in account.get_images() %}
+                            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                                <img src="{{ url_for('static', filename=image) }}" class="d-block w-100" style="border-radius: 10px; max-height: 400px; object-fit: contain;" alt="Account image {{ loop.index }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if account.get_images()|length > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#accountImagesCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#accountImagesCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
                 <h5>Mô tả:</h5>
                 <p class="text-muted">{{ account.description or 'Không có mô tả' }}</p>
                 

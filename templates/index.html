@@ -43,6 +43,9 @@
     {% for account in accounts.items %}
     <div class="col-md-4 col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
         <div class="account-card">
+            {% if account.get_images() %}
+            <img src="{{ url_for('static', filename=account.get_images()[0]) }}" class="img-fluid mb-3" style="border-radius: 10px; max-height: 200px; width: 100%; object-fit: cover;" alt="{{ account.title }}">
+            {% endif %}
             <h5>{{ account.title }}</h5>
             <div class="account-tags">
                 <span class="tag">{{ account.category }}</span>

@@ -10,7 +10,7 @@
                     {% if action == 'add' %}Thêm{% else %}Chỉnh sửa{% endif %} tài khoản
                 </h3>
                 
-                <form method="POST" novalidate>
+                <form method="POST" enctype="multipart/form-data" novalidate>
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
@@ -66,6 +66,25 @@
                         {{ form.internal_notes.label(class="form-label") }}
                         {{ form.internal_notes(class="form-control", rows=3, placeholder="Ghi chú chỉ admin nhìn thấy") }}
                     </div>
+                    
+                    <div class="mb-3">
+                        {{ form.images.label(class="form-label") }}
+                        {{ form.images(class="form-control", multiple=True) }}
+                        <small class="form-text text-muted">Chọn 1 hoặc nhiều hình ảnh (JPG, PNG, GIF, WEBP)</small>
+                    </div>
+                    
+                    {% if action == 'edit' and account.images %}
+                    <div class="mb-3">
+                        <label class="form-label">Hình ảnh hiện có:</label>
+                        <div class="row">
+                            {% for image in account.get_images() %}
+                            <div class="col-md-3 mb-2">
+                                <img src="{{ url_for('static', filename=image) }}" class="img-thumbnail" alt="Account image">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Lưu
