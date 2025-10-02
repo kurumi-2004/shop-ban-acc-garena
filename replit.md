@@ -135,6 +135,21 @@ A professional Vietnamese gaming account marketplace website that sells game acc
 
 ## Recent Changes (October 2, 2025)
 
+### Latest Updates - Session 3
+- ✅ **VietQR Payment Integration**: Complete payment system with QR code generation
+- ✅ **Payment Settings**: Admin can configure bank information at /admin/payment-settings
+- ✅ **Payment Flow**: Checkout → Generate QR → Customer confirms → Admin verifies → Completed
+- ✅ **Security Enhancement**: Added CSRF protection to all POST requests
+- ✅ **Password Reset**: Forgot password functionality with token-based reset system
+- ✅ **Modern Admin Dashboard**: Redesigned dashboard with system architecture diagram
+  - Visual system diagram showing Client → Flask → Database → VietQR flow
+  - Security layer diagram with CSRF, Encryption, Audit Logs
+  - Modern statistics cards with gradients and animations
+  - Quick action buttons for common admin tasks
+- ✅ **Enhanced Order Display**: Payment method and QR payment options visible
+
+### Session 2 Updates
+
 ### Latest Updates - Session 2
 - ✅ **Fixed "View Details" button**: Resolved z-index and pointer-events CSS conflict that prevented button clicks
 - ✅ **Demo account display**: Added demo credentials section on login page (user@example.com only for security)
