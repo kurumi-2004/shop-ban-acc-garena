@@ -463,6 +463,85 @@ body::before {
     font-weight: 700;
 }
 
+.demo-accounts {
+    background: linear-gradient(135deg, rgba(255, 102, 0, 0.05), rgba(0, 212, 255, 0.05));
+    border: 1px solid rgba(255, 102, 0, 0.2);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.demo-accounts h6 {
+    color: var(--primary-orange);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.demo-account {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.demo-account:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 102, 0, 0.2);
+    border-color: var(--primary-orange);
+}
+
+.demo-role {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.demo-role.super-admin {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.demo-role.admin {
+    background: linear-gradient(135deg, #FF6600, #FF8533);
+    color: white;
+}
+
+.demo-role.support {
+    background: linear-gradient(135deg, #00D4FF, #00A8CC);
+    color: white;
+}
+
+.demo-role.user {
+    background: linear-gradient(135deg, #28A745, #20C997);
+    color: white;
+}
+
+.demo-account small {
+    color: var(--dark-grey);
+    line-height: 1.6;
+}
+
+.demo-account strong {
+    color: var(--tech-black);
+}
+
+@media (max-width: 576px) {
+    .demo-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .modern-toast {
     position: fixed;
     top: 20px;

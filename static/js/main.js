@@ -1,16 +1,25 @@
+window.addEventListener('load', function() {
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.classList.add('hidden');
+    }
+    
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 100
+        });
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
             loadingScreen.classList.add('hidden');
         }
-    }, 800);
-
-    AOS.init({
-        duration: 800,
-        once: true,
-        offset: 100
-    });
+    }, 1500);
 
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
