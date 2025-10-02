@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4" data-aos="fade-down"><i class="fas fa-receipt"></i> Đơn hàng của tôi</h2>
+
+{% if orders %}
+<div class="table-responsive" data-aos="fade-up">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Mã đơn</th>
+                <th>Ngày đặt</th>
+                <th>Số lượng</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ order.accounts.count() }} tài khoản</td>
+                <td>{{ "{:,.0f}".format(order.total_amount) }} ₫</td>
+                <td>
+                    <span class="order-status {{ order.status }}">
+                        {% if order.status == 'pending' %}Chờ xử lý
+                        {% elif order.status == 'processing' %}Đang xử lý
+                        {% elif order.status == 'completed' %}Hoàn thành
+                        {% else %}Đã hủy{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye"></i> Xem
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-5" data-aos="zoom-in">
+    <i class="fas fa-receipt fa-5x text-muted mb-3"></i>
+    <h4>Chưa có đơn hàng nào</h4>
+    <p class="text-muted">Các đơn hàng của bạn sẽ hiển thị ở đây</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <i class="fas fa-shopping-bag"></i> Mua sắm ngay
+    </a>
+</div>
+{% endif %}
+{% endblock %}

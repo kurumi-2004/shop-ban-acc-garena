@@ -1,0 +1,419 @@
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
+from functools import wraps
+from datetime import datetime
+import os
+
+from extensions import db, login_manager, migrate, cipher_suite
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+migrate.init_app(app, db)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
+
+from models import User, GameAccount, Order, CartItem, AuditLog
+from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm
+
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash('Vui lòng đăng nhập để tiếp tục.', 'warning')
+                return redirect(url_for('login'))
+            if not current_user.has_permission(required_role):
+                flash('Bạn không có quyền truy cập.', 'danger')
+                AuditLog.create_log(current_user.id, 'access_denied', 
+                                   f'Attempted to access {request.endpoint} without permission', 
+                                   request.remote_addr)
+                return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route('/')
+def index():
+    page = request.args.get('page', 1, type=int)
+    category = request.args.get('category', '')
+    rank = request.args.get('rank', '')
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    search = request.args.get('search', '')
+    
+    query = GameAccount.query.filter_by(is_sold=False)
+    
+    if category:
+        query = query.filter_by(category=category)
+    if rank:
+        query = query.filter_by(rank=rank)
+    if min_price:
+        query = query.filter(GameAccount.price >= min_price)
+    if max_price:
+        query = query.filter(GameAccount.price <= max_price)
+    if search:
+        query = query.filter(GameAccount.title.ilike(f'%{search}%'))
+    
+    accounts = query.order_by(GameAccount.created_at.desc()).paginate(
+        page=page, per_page=12, error_out=False
+    )
+    
+    categories = db.session.query(GameAccount.category).distinct().all()
+    ranks = db.session.query(GameAccount.rank).distinct().all()
+    
+    return render_template('index.html', 
+                         accounts=accounts,
+                         categories=[c[0] for c in categories],
+                         ranks=[r[0] for r in ranks])
+
+@app.route('/account/<int:account_id>')
+def account_detail(account_id):
+    account = GameAccount.query.get_or_404(account_id)
+    if current_user.is_authenticated:
+        AuditLog.create_log(current_user.id, 'view_account', 
+                           f'Viewed account {account_id}', request.remote_addr)
+    return render_template('account_detail.html', account=account)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember.data)
+            AuditLog.create_log(user.id, 'login', f'User logged in', request.remote_addr)
+            next_page = request.args.get('next')
+            flash('Đăng nhập thành công!', 'success')
+            return redirect(next_page if next_page else url_for('index'))
+        else:
+            flash('Email hoặc mật khẩu không đúng.', 'danger')
+            AuditLog.create_log(None, 'login_failed', 
+                               f'Failed login attempt for {form.email.data}', 
+                               request.remote_addr)
+    
+    return render_template('login.html', form=form)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user = User(
+            email=form.email.data,
+            username=form.username.data,
+            full_name=form.full_name.data,
+            phone=form.phone.data
+        )
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        AuditLog.create_log(user.id, 'register', f'New user registered: {user.username}', request.remote_addr)
+        flash('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    AuditLog.create_log(current_user.id, 'logout', 'User logged out', request.remote_addr)
+    logout_user()
+    flash('Đã đăng xuất thành công.', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/cart')
+@login_required
+def cart():
+    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
+    total = sum(item.account.price for item in cart_items)
+    return render_template('cart.html', cart_items=cart_items, total=total)
+
+@app.route('/add_to_cart/<int:account_id>', methods=['POST'])
+@login_required
+def add_to_cart(account_id):
+    account = GameAccount.query.get_or_404(account_id)
+    
+    if account.is_sold:
+        return jsonify({'success': False, 'message': 'Tài khoản đã được bán'}), 400
+    
+    existing_item = CartItem.query.filter_by(
+        user_id=current_user.id,
+        account_id=account_id
+    ).first()
+    
+    if existing_item:
+        return jsonify({'success': False, 'message': 'Tài khoản đã có trong giỏ hàng'}), 400
+    
+    cart_item = CartItem(user_id=current_user.id, account_id=account_id)
+    db.session.add(cart_item)
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'add_to_cart', 
+                       f'Added account {account_id} to cart', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã thêm vào giỏ hàng'})
+
+@app.route('/remove_from_cart/<int:item_id>', methods=['POST'])
+@login_required
+def remove_from_cart(item_id):
+    cart_item = CartItem.query.get_or_404(item_id)
+    if cart_item.user_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Không có quyền'}), 403
+    
+    db.session.delete(cart_item)
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'remove_from_cart', 
+                       f'Removed cart item {item_id}', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã xóa khỏi giỏ hàng'})
+
+@app.route('/checkout', methods=['GET', 'POST'])
+@login_required
+def checkout():
+    cart_items = CartItem.query.filter_by(user_id=current_user.id).all()
+    
+    if not cart_items:
+        flash('Giỏ hàng trống.', 'warning')
+        return redirect(url_for('cart'))
+    
+    total = sum(item.account.price for item in cart_items)
+    form = CheckoutForm()
+    
+    if form.validate_on_submit():
+        order = Order(
+            user_id=current_user.id,
+            total_amount=total,
+            customer_name=form.customer_name.data,
+            customer_email=form.customer_email.data,
+            customer_phone=form.customer_phone.data,
+            status='pending'
+        )
+        db.session.add(order)
+        db.session.flush()
+        
+        for cart_item in cart_items:
+            cart_item.account.is_sold = True
+            cart_item.account.order_id = order.id
+            db.session.delete(cart_item)
+        
+        db.session.commit()
+        
+        AuditLog.create_log(current_user.id, 'create_order', 
+                           f'Created order {order.id} with {len(cart_items)} items, total {total}', 
+                           request.remote_addr)
+        
+        flash('Đơn hàng đã được tạo! Vui lòng chờ xử lý thanh toán.', 'success')
+        return redirect(url_for('order_detail', order_id=order.id))
+    
+    return render_template('checkout.html', form=form, cart_items=cart_items, total=total)
+
+@app.route('/orders')
+@login_required
+def orders():
+    user_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
+    return render_template('orders.html', orders=user_orders)
+
+@app.route('/order/<int:order_id>')
+@login_required
+def order_detail(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id and not current_user.has_permission('support'):
+        flash('Không có quyền truy cập đơn hàng này.', 'danger')
+        AuditLog.create_log(current_user.id, 'access_denied', 
+                           f'Attempted to access order {order_id}', request.remote_addr)
+        return redirect(url_for('orders'))
+    
+    if order.status == 'completed':
+        AuditLog.create_log(current_user.id, 'view_credentials', 
+                           f'Viewed credentials for order {order_id}', request.remote_addr)
+    
+    return render_template('order_detail.html', order=order)
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html')
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    if request.method == 'POST':
+        current_user.full_name = request.form.get('full_name')
+        current_user.phone = request.form.get('phone')
+        db.session.commit()
+        AuditLog.create_log(current_user.id, 'update_profile', 
+                           'Updated profile information', request.remote_addr)
+        flash('Cập nhật thông tin thành công!', 'success')
+        return redirect(url_for('profile'))
+    
+    return render_template('edit_profile.html')
+
+@app.route('/admin')
+@role_required('support')
+def admin_dashboard():
+    total_revenue = db.session.query(db.func.sum(Order.total_amount)).filter_by(status='completed').scalar() or 0
+    total_accounts = GameAccount.query.count()
+    sold_accounts = GameAccount.query.filter_by(is_sold=True).count()
+    pending_orders = Order.query.filter_by(status='pending').count()
+    
+    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(10).all()
+    
+    return render_template('admin/dashboard.html',
+                         total_revenue=total_revenue,
+                         total_accounts=total_accounts,
+                         sold_accounts=sold_accounts,
+                         pending_orders=pending_orders,
+                         recent_orders=recent_orders)
+
+@app.route('/admin/accounts')
+@role_required('support')
+def admin_accounts():
+    page = request.args.get('page', 1, type=int)
+    accounts = GameAccount.query.order_by(GameAccount.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template('admin/accounts.html', accounts=accounts)
+
+@app.route('/admin/account/add', methods=['GET', 'POST'])
+@role_required('admin')
+def admin_add_account():
+    form = AccountForm()
+    if form.validate_on_submit():
+        encrypted_username = cipher_suite.encrypt(form.account_username.data.encode()).decode()
+        encrypted_password = cipher_suite.encrypt(form.account_password.data.encode()).decode()
+        
+        account = GameAccount(
+            title=form.title.data,
+            description=form.description.data,
+            category=form.category.data,
+            rank=form.rank.data,
+            price=form.price.data,
+            account_username=encrypted_username,
+            account_password=encrypted_password,
+            internal_notes=form.internal_notes.data
+        )
+        db.session.add(account)
+        db.session.commit()
+        
+        AuditLog.create_log(current_user.id, 'create_account', 
+                           f'Created account {account.id}: {account.title}', request.remote_addr)
+        
+        flash('Đã thêm tài khoản thành công!', 'success')
+        return redirect(url_for('admin_accounts'))
+    
+    return render_template('admin/account_form.html', form=form, action='add')
+
+@app.route('/admin/account/edit/<int:account_id>', methods=['GET', 'POST'])
+@role_required('admin')
+def admin_edit_account(account_id):
+    account = GameAccount.query.get_or_404(account_id)
+    
+    if request.method == 'GET':
+        form = AccountForm(
+            title=account.title,
+            description=account.description,
+            category=account.category,
+            rank=account.rank,
+            price=account.price,
+            internal_notes=account.internal_notes
+        )
+    else:
+        form = AccountForm()
+    
+    if form.validate_on_submit():
+        account.title = form.title.data
+        account.description = form.description.data
+        account.category = form.category.data
+        account.rank = form.rank.data
+        account.price = form.price.data
+        account.internal_notes = form.internal_notes.data
+        
+        if form.account_username.data and form.account_username.data.strip():
+            account.account_username = cipher_suite.encrypt(form.account_username.data.encode()).decode()
+        if form.account_password.data and form.account_password.data.strip():
+            account.account_password = cipher_suite.encrypt(form.account_password.data.encode()).decode()
+        
+        db.session.commit()
+        
+        AuditLog.create_log(current_user.id, 'edit_account', 
+                           f'Edited account {account.id}: {account.title}', request.remote_addr)
+        
+        flash('Đã cập nhật tài khoản thành công!', 'success')
+        return redirect(url_for('admin_accounts'))
+    
+    decrypted_username = account.get_decrypted_username()
+    decrypted_password = account.get_decrypted_password()
+    
+    return render_template('admin/account_form.html', form=form, action='edit', account=account,
+                          decrypted_username=decrypted_username, decrypted_password=decrypted_password)
+
+@app.route('/admin/account/delete/<int:account_id>', methods=['POST'])
+@role_required('admin')
+def admin_delete_account(account_id):
+    account = GameAccount.query.get_or_404(account_id)
+    
+    if account.is_sold:
+        return jsonify({'success': False, 'message': 'Không thể xóa tài khoản đã bán'}), 400
+    
+    AuditLog.create_log(current_user.id, 'delete_account', 
+                       f'Deleted account {account.id}: {account.title}', request.remote_addr)
+    
+    db.session.delete(account)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Đã xóa tài khoản'})
+
+@app.route('/admin/orders')
+@role_required('support')
+def admin_orders():
+    page = request.args.get('page', 1, type=int)
+    orders = Order.query.order_by(Order.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template('admin/orders.html', orders=orders)
+
+@app.route('/admin/order/<int:order_id>/update_status', methods=['POST'])
+@role_required('support')
+def admin_update_order_status(order_id):
+    order = Order.query.get_or_404(order_id)
+    new_status = request.json.get('status')
+    
+    if new_status not in ['pending', 'processing', 'completed', 'cancelled']:
+        return jsonify({'success': False, 'message': 'Trạng thái không hợp lệ'}), 400
+    
+    old_status = order.status
+    order.status = new_status
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'update_order_status', 
+                       f'Updated order {order.id} status from {old_status} to {new_status}', 
+                       request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã cập nhật trạng thái'})
+
+@app.route('/admin/logs')
+@role_required('admin')
+def admin_logs():
+    page = request.args.get('page', 1, type=int)
+    logs = AuditLog.query.order_by(AuditLog.created_at.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+    return render_template('admin/logs.html', logs=logs)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

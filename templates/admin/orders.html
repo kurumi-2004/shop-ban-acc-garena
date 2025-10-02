@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4" data-aos="fade-down"><i class="fas fa-clipboard-list"></i> Quản lý đơn hàng</h2>
+
+<div class="card" data-aos="fade-up">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Email</th>
+                        <th>Ngày</th>
+                        <th>Số TK</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders.items %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>{{ order.customer_email }}</td>
+                        <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ order.accounts.count() }}</td>
+                        <td>{{ "{:,.0f}".format(order.total_amount) }} ₫</td>
+                        <td>
+                            <select class="form-select form-select-sm order-status {{ order.status }}" 
+                                    onchange="updateOrderStatus({{ order.id }}, this.value)">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Chờ xử lý</option>
+                                <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Đang xử lý</option>
+                                <option value="completed" {% if order.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+                                <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
+                            </select>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Xem
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if orders.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if orders.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('admin_orders', page=orders.prev_num) }}">Trước</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in orders.iter_pages() %}
+                    {% if page_num %}
+                        <li class="page-item {% if page_num == orders.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin_orders', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if orders.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('admin_orders', page=orders.next_num) }}">Sau</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section" data-aos="fade-down">
+    <h1>Mua tài khoản an toàn - giao hàng tự động</h1>
+    <p>Nền tảng uy tín, bảo mật tuyệt đối, giao dịch nhanh chóng</p>
+</div>
+
+<div class="filter-section" data-aos="fade-up">
+    <form method="GET" action="{{ url_for('index') }}" class="row g-3">
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control" placeholder="Tìm kiếm..." value="{{ request.args.get('search', '') }}">
+        </div>
+        <div class="col-md-2">
+            <select name="category" class="form-select">
+                <option value="">Tất cả thể loại</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if request.args.get('category') == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="rank" class="form-select">
+                <option value="">Tất cả rank</option>
+                {% for r in ranks %}
+                <option value="{{ r }}" {% if request.args.get('rank') == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="min_price" class="form-control" placeholder="Giá từ" value="{{ request.args.get('min_price', '') }}">
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="max_price" class="form-control" placeholder="Giá đến" value="{{ request.args.get('max_price', '') }}">
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Lọc</button>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    {% for account in accounts.items %}
+    <div class="col-md-4 col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+        <div class="account-card">
+            <h5>{{ account.title }}</h5>
+            <div class="account-tags">
+                <span class="tag">{{ account.category }}</span>
+                {% if account.rank %}
+                <span class="tag rank">{{ account.rank }}</span>
+                {% endif %}
+                {% if account.is_sold %}
+                <span class="tag sold">Đã bán</span>
+                {% else %}
+                <span class="tag available">Còn hàng</span>
+                {% endif %}
+            </div>
+            <div class="account-price">{{ "{:,.0f}".format(account.price) }} ₫</div>
+            <p class="text-muted">{{ account.description[:80] }}...</p>
+            <a href="{{ url_for('account_detail', account_id=account.id) }}" class="btn btn-primary w-100">
+                <i class="fas fa-eye"></i> Xem chi tiết
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle"></i> Không tìm thấy tài khoản phù hợp
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if accounts.pages > 1 %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if accounts.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('index', page=accounts.prev_num) }}">Trước</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in accounts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                {% if page_num != accounts.page %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('index', page=page_num) }}">{{ page_num }}</a></li>
+                {% else %}
+                <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if accounts.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('index', page=accounts.next_num) }}">Sau</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
