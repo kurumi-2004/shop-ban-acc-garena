@@ -12,20 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
         offset: 100
     });
 
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-
-    if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            sidebar.classList.toggle('show');
-            if (mainContent) {
-                mainContent.classList.toggle('expanded');
-            }
-        });
-    }
-
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
@@ -138,9 +124,23 @@ function updateOrderStatus(orderId, status) {
 
 function showToast(message, type) {
     const toast = document.createElement('div');
-    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 end-0 m-3`;
-    toast.style.zIndex = '9999';
-    toast.textContent = message;
+    toast.className = `modern-toast toast-${type}`;
+    
+    const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+    const iconColor = type === 'success' ? '#28A745' : type === 'error' ? '#DC3545' : '#00D4FF';
+    
+    toast.innerHTML = `
+        <div class="toast-icon" style="color: ${iconColor}">
+            <i class="fas ${icon}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
     document.body.appendChild(toast);
     
     setTimeout(() => {
@@ -149,6 +149,54 @@ function showToast(message, type) {
     
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
+}
+
+function addToWishlist(accountId) {
+    fetch(`/wishlist/add/${accountId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            const heartIcon = document.querySelector(`button[onclick="addToWishlist(${accountId})"] i`);
+            if (heartIcon) {
+                heartIcon.classList.replace('fa-heart-o', 'fa-heart');
+                heartIcon.style.color = '#FF6600';
+            }
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Có lỗi xảy ra', 'error');
+    });
+}
+
+function removeFromWishlist(accountId) {
+    fetch(`/wishlist/remove/${accountId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Có lỗi xảy ra', 'error');
+    });
 }

@@ -19,108 +19,129 @@
         </div>
     </div>
 
-    {% if current_user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark top-navbar">
-        <div class="container-fluid">
-            <button class="btn btn-link sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <span class="navbar-brand mb-0">Shop Acc Garena</span>
+    <nav class="navbar navbar-expand-lg navbar-dark modern-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand modern-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-gamepad me-2"></i>
+                <span class="brand-text">Shop Acc Garena</span>
+            </a>
             
-            <ul class="navbar-nav ms-auto horizontal-menu">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('profile') }}">
-                        <i class="fas fa-user"></i> Tài khoản
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('edit_profile') }}">
-                        <i class="fas fa-user-edit"></i> Thông tin cá nhân
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('orders') }}">
-                        <i class="fas fa-history"></i> Lịch sử mua hàng
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('logout') }}">
-                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                    </a>
-                </li>
-            </ul>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> Trang chủ
+                        </a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'wishlist' %}active{% endif %}" href="{{ url_for('wishlist') }}">
+                            <i class="fas fa-heart"></i> Yêu thích
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'cart' %}active{% endif %}" href="{{ url_for('cart') }}">
+                            <i class="fas fa-shopping-cart"></i> Giỏ hàng
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'orders' %}active{% endif %}" href="{{ url_for('orders') }}">
+                            <i class="fas fa-receipt"></i> Đơn hàng
+                        </a>
+                    </li>
+                    {% if current_user.is_admin %}
+                    <li class="nav-item dropdown mega-dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> Quản trị
+                        </a>
+                        <ul class="dropdown-menu mega-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
+                                    <i class="fas fa-chart-line text-primary"></i> Dashboard
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_accounts') }}">
+                                    <i class="fas fa-user-shield text-success"></i> Quản lý tài khoản
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_orders') }}">
+                                    <i class="fas fa-clipboard-list text-info"></i> Quản lý đơn hàng
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin_logs') }}">
+                                    <i class="fas fa-file-alt text-warning"></i> Nhật ký hoạt động
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown user-dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-2">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <span class="user-name">{{ current_user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end user-menu">
+                            <li class="dropdown-header">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle fs-3 me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ current_user.full_name }}</div>
+                                        <small class="text-muted">{{ current_user.email }}</small>
+                                    </div>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('profile') }}">
+                                    <i class="fas fa-user text-primary"></i> Tài khoản của tôi
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('edit_profile') }}">
+                                    <i class="fas fa-user-edit text-info"></i> Chỉnh sửa hồ sơ
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="{{ url_for('register') }}">
+                            <i class="fas fa-user-plus"></i> Đăng ký
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
     </nav>
-    {% else %}
-    <nav class="navbar navbar-expand-lg navbar-dark top-navbar">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('index') }}">Shop Acc Garena</a>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('login') }}">
-                        <i class="fas fa-sign-in-alt"></i> Đăng nhập
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('register') }}">
-                        <i class="fas fa-user-plus"></i> Đăng ký
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-    {% endif %}
 
-    {% if current_user.is_authenticated %}
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-gamepad"></i> Menu</h3>
-        </div>
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
-                    <i class="fas fa-home"></i> Trang chủ
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('cart') }}" class="{% if request.endpoint == 'cart' %}active{% endif %}">
-                    <i class="fas fa-shopping-cart"></i> Giỏ hàng
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('orders') }}" class="{% if request.endpoint == 'orders' %}active{% endif %}">
-                    <i class="fas fa-receipt"></i> Đơn hàng của tôi
-                </a>
-            </li>
-            {% if current_user.is_admin %}
-            <li class="menu-divider"></li>
-            <li class="menu-header">QUẢN TRỊ</li>
-            <li>
-                <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-                    <i class="fas fa-chart-line"></i> Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('admin_accounts') }}" class="{% if request.endpoint == 'admin_accounts' %}active{% endif %}">
-                    <i class="fas fa-user-shield"></i> Quản lý tài khoản
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('admin_orders') }}" class="{% if request.endpoint == 'admin_orders' %}active{% endif %}">
-                    <i class="fas fa-clipboard-list"></i> Quản lý đơn hàng
-                </a>
-            </li>
-            <li>
-                <a href="{{ url_for('admin_logs') }}" class="{% if request.endpoint == 'admin_logs' %}active{% endif %}">
-                    <i class="fas fa-file-alt"></i> Nhật ký hoạt động
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-    </div>
-    {% endif %}
-
-    <main class="{% if current_user.is_authenticated %}main-content{% else %}main-content-full{% endif %}" id="mainContent">
+    <main class="main-content-full" id="mainContent">
         <div class="container-fluid py-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -136,6 +157,20 @@
             {% block content %}{% endblock %}
         </div>
     </main>
+
+    {% if current_user.is_authenticated %}
+    <div class="quick-actions">
+        <button class="quick-action-btn" onclick="window.location.href='{{ url_for('wishlist') }}'">
+            <i class="fas fa-heart"></i>
+        </button>
+        <button class="quick-action-btn" onclick="window.location.href='{{ url_for('cart') }}'">
+            <i class="fas fa-shopping-cart"></i>
+        </button>
+        <button class="quick-action-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+    {% endif %}
 
     <footer class="footer">
         <div class="container">

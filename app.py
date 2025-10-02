@@ -8,7 +8,12 @@ from extensions import db, login_manager, migrate, cipher_suite
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    import warnings
+    warnings.warn('DATABASE_URL not set, using SQLite for development. Production requires PostgreSQL.')
+    database_url = 'sqlite:///shop.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -17,7 +22,7 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
-from models import User, GameAccount, Order, CartItem, AuditLog
+from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist
 from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm
 
 def role_required(required_role):
@@ -414,6 +419,46 @@ def admin_logs():
         page=page, per_page=50, error_out=False
     )
     return render_template('admin/logs.html', logs=logs)
+
+@app.route('/wishlist')
+@login_required
+def wishlist():
+    wishlist_items = Wishlist.query.filter_by(user_id=current_user.id).all()
+    return render_template('wishlist.html', wishlist_items=wishlist_items)
+
+@app.route('/wishlist/add/<int:account_id>', methods=['POST'])
+@login_required
+def add_to_wishlist(account_id):
+    account = GameAccount.query.get_or_404(account_id)
+    
+    if account.is_sold:
+        return jsonify({'success': False, 'message': 'Tài khoản đã được bán'}), 400
+    
+    existing = Wishlist.query.filter_by(user_id=current_user.id, account_id=account_id).first()
+    if existing:
+        return jsonify({'success': False, 'message': 'Đã có trong danh sách yêu thích'}), 400
+    
+    wishlist_item = Wishlist(user_id=current_user.id, account_id=account_id)
+    db.session.add(wishlist_item)
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'add_to_wishlist', 
+                       f'Added account {account_id} to wishlist', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã thêm vào danh sách yêu thích'})
+
+@app.route('/wishlist/remove/<int:account_id>', methods=['POST'])
+@login_required
+def remove_from_wishlist(account_id):
+    wishlist_item = Wishlist.query.filter_by(user_id=current_user.id, account_id=account_id).first_or_404()
+    
+    db.session.delete(wishlist_item)
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'remove_from_wishlist', 
+                       f'Removed account {account_id} from wishlist', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã xóa khỏi danh sách yêu thích'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

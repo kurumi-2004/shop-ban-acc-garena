@@ -18,6 +18,7 @@ class User(UserMixin, db.Model):
     
     orders = db.relationship('Order', backref='user', lazy='dynamic')
     cart_items = db.relationship('CartItem', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    wishlist_items = db.relationship('Wishlist', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -124,3 +125,16 @@ class AuditLog(db.Model):
     
     def __repr__(self):
         return f'<AuditLog {self.action}>'
+
+class Wishlist(db.Model):
+    __tablename__ = 'wishlists'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('game_accounts.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    account = db.relationship('GameAccount', backref='wishlist_items')
+    
+    def __repr__(self):
+        return f'<Wishlist {self.id}>'
