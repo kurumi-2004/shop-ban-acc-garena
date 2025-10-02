@@ -19,7 +19,7 @@ def init_database():
                 is_admin=True,
                 role='superadmin'
             )
-            superadmin.set_password('super123')
+            superadmin.set_password('SuperAdmin@2024!Secure')
             db.session.add(superadmin)
             
             admin = User(
@@ -30,7 +30,7 @@ def init_database():
                 is_admin=True,
                 role='admin'
             )
-            admin.set_password('admin123')
+            admin.set_password('Admin@2024!Secure')
             db.session.add(admin)
             
             support = User(
@@ -41,7 +41,7 @@ def init_database():
                 is_admin=True,
                 role='support'
             )
-            support.set_password('support123')
+            support.set_password('Support@2024!Secure')
             db.session.add(support)
             
             user = User(
@@ -148,19 +148,13 @@ def init_database():
             
             db.session.commit()
             print("Sample data added successfully!")
-            print("\n=== Login Credentials ===")
-            print("\nSuper Admin (Full Access):")
-            print("Email: superadmin@shopaccgarena.vn")
-            print("Password: super123")
-            print("\nAdmin (Account & Order Management):")
-            print("Email: admin@shopaccgarena.vn")
-            print("Password: admin123")
-            print("\nSupport (View Only):")
-            print("Email: support@shopaccgarena.vn")
-            print("Password: support123")
-            print("\nTest User:")
-            print("Email: user@example.com")
-            print("Password: user123")
+            print("\n=== IMPORTANT: Admin Credentials (DO NOT SHARE) ===")
+            print("\nSuper Admin: superadmin@shopaccgarena.vn / SuperAdmin@2024!Secure")
+            print("Admin: admin@shopaccgarena.vn / Admin@2024!Secure")
+            print("Support: support@shopaccgarena.vn / Support@2024!Secure")
+            print("\n=== Public Demo Account ===")
+            print("User Demo: user@example.com / user123")
+            print("\nNOTE: Admin passwords are complex and should be changed in production!")
         else:
             print("Database already initialized!")
 
