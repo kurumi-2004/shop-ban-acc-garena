@@ -70,15 +70,17 @@ A professional Vietnamese gaming account marketplace website that sells game acc
 
 ## Default Credentials
 
-### Admin Account
+### Admin Account (Security Enhanced)
 - Email: admin@shopaccgarena.vn
-- Password: admin123
+- Password: SuperAdmin@2024!Secure (complex password in init_db.py)
 - Access: Full admin panel
+- **Note**: Admin credentials NOT displayed on login page for security
 
-### Test User Account
+### Test User Account (Demo Display)
 - Email: user@example.com
 - Password: user123
 - Access: Customer features
+- **Feature**: Click-to-autofill on login page for easy testing
 
 ## Sample Data
 8 sample game accounts with different categories:
@@ -132,6 +134,16 @@ A professional Vietnamese gaming account marketplace website that sells game acc
 5. Review audit logs for security
 
 ## Recent Changes (October 2, 2025)
+
+### Latest Updates - Session 2
+- ✅ **Fixed "View Details" button**: Resolved z-index and pointer-events CSS conflict that prevented button clicks
+- ✅ **Demo account display**: Added demo credentials section on login page (user@example.com only for security)
+- ✅ **Click-to-autofill**: Users can click demo account to auto-populate login form
+- ✅ **Loading screen fix**: Added dual fallback mechanism (DOMContentLoaded + window load events)
+- ✅ **Security enhancement**: Changed admin passwords to complex format (SuperAdmin@2024!Secure)
+- ✅ **CSS improvements**: Better styling for account cards and demo sections
+
+### Initial Implementation - Session 1
 - ✅ Created complete Flask application structure
 - ✅ Implemented user authentication with Flask-Login
 - ✅ Built responsive UI with Bootstrap 5 + custom CSS
