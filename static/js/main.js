@@ -1,3 +1,8 @@
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
 window.addEventListener('load', function() {
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
@@ -35,6 +40,7 @@ function addToCart(accountId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         }
     })
     .then(response => response.json())
@@ -62,6 +68,7 @@ function removeFromCart(itemId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         }
     })
     .then(response => response.json())
@@ -89,6 +96,7 @@ function deleteAccount(accountId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         }
     })
     .then(response => response.json())
@@ -112,6 +120,7 @@ function updateOrderStatus(orderId, status) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         },
         body: JSON.stringify({ status: status })
     })
@@ -167,6 +176,7 @@ function addToWishlist(accountId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         }
     })
     .then(response => response.json())
@@ -192,6 +202,7 @@ function removeFromWishlist(accountId) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
         }
     })
     .then(response => response.json())

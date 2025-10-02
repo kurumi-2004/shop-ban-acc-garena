@@ -67,10 +67,13 @@ function confirmPayment(orderId) {
         return;
     }
     
+    const csrfToken = '{{ csrf_token() }}';
+    
     fetch(`/payment/${orderId}/confirm`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
         }
     })
     .then(response => response.json())

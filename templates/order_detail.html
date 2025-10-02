@@ -12,11 +12,18 @@
                         <p><strong>Ngày đặt:</strong> {{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
                         <p><strong>Trạng thái:</strong> 
                             <span class="order-status {{ order.status }}">
-                                {% if order.status == 'pending' %}Chờ xử lý
+                                {% if order.status == 'pending' %}Chờ thanh toán
                                 {% elif order.status == 'processing' %}Đang xử lý
                                 {% elif order.status == 'completed' %}Hoàn thành
                                 {% else %}Đã hủy{% endif %}
                             </span>
+                        </p>
+                        <p><strong>Phương thức:</strong> 
+                            {% if order.payment_method == 'vietqr' %}
+                            <span class="badge bg-success"><i class="fas fa-qrcode"></i> VietQR</span>
+                            {% else %}
+                            {{ order.payment_method }}
+                            {% endif %}
                         </p>
                     </div>
                     <div class="col-md-6">
@@ -24,6 +31,9 @@
                         <p><strong>Email:</strong> {{ order.customer_email }}</p>
                         {% if order.customer_phone %}
                         <p><strong>Điện thoại:</strong> {{ order.customer_phone }}</p>
+                        {% endif %}
+                        {% if order.payment_reference %}
+                        <p><strong>Mã thanh toán:</strong> <code>{{ order.payment_reference }}</code></p>
                         {% endif %}
                     </div>
                 </div>
@@ -84,6 +94,18 @@
                 <div class="alert alert-warning">
                     <i class="fas fa-clock"></i> Đang chờ thanh toán
                 </div>
+                <a href="{{ url_for('payment', order_id=order.id) }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-qrcode"></i> Thanh toán VietQR
+                </a>
+                {% elif order.status == 'processing' %}
+                <div class="alert alert-info">
+                    <i class="fas fa-spinner"></i> Đang xử lý thanh toán
+                </div>
+                {% if current_user.has_permission('support') %}
+                <button onclick="completePayment({{ order.id }})" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-check"></i> Xác nhận thanh toán
+                </button>
+                {% endif %}
                 {% endif %}
                 
                 <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary w-100">
@@ -93,4 +115,38 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function completePayment(orderId) {
+    if (!confirm('Xác nhận đã nhận thanh toán cho đơn hàng này?')) {
+        return;
+    }
+    
+    const csrfToken = '{{ csrf_token() }}';
+    
+    fetch(`/admin/order/${orderId}/complete-payment`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Có lỗi xảy ra', 'error');
+    });
+}
+</script>
 {% endblock %}

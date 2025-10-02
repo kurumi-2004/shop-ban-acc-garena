@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from extensions import db, login_manager, migrate, cipher_suite
+from extensions import db, login_manager, migrate, cipher_suite, csrf
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -23,6 +23,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 db.init_app(app)
 migrate.init_app(app, db)
 login_manager.init_app(app)
+csrf.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
