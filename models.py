@@ -95,6 +95,8 @@ class Order(db.Model):
     customer_name = db.Column(db.String(120), nullable=False)
     customer_email = db.Column(db.String(120), nullable=False)
     customer_phone = db.Column(db.String(20))
+    payment_method = db.Column(db.String(50), default='vietqr')
+    payment_reference = db.Column(db.String(200))
     admin_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -156,3 +158,23 @@ class Wishlist(db.Model):
     
     def __repr__(self):
         return f'<Wishlist {self.id}>'
+
+class PaymentSettings(db.Model):
+    __tablename__ = 'payment_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    bank_id = db.Column(db.String(20), nullable=False)
+    bank_name = db.Column(db.String(100), nullable=False)
+    account_number = db.Column(db.String(50), nullable=False)
+    account_name = db.Column(db.String(200), nullable=False)
+    qr_template = db.Column(db.String(20), default='compact')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_active_settings():
+        return PaymentSettings.query.filter_by(is_active=True).first()
+    
+    def __repr__(self):
+        return f'<PaymentSettings {self.bank_name}>'

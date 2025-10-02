@@ -26,8 +26,8 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
-from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist
-from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm
+from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist, PaymentSettings
+from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -224,13 +224,13 @@ def checkout():
             customer_name=form.customer_name.data,
             customer_email=form.customer_email.data,
             customer_phone=form.customer_phone.data,
-            status='pending'
+            status='pending',
+            payment_method='vietqr'
         )
         db.session.add(order)
         db.session.flush()
         
         for cart_item in cart_items:
-            cart_item.account.is_sold = True
             cart_item.account.order_id = order.id
             db.session.delete(cart_item)
         
@@ -240,10 +240,81 @@ def checkout():
                            f'Created order {order.id} with {len(cart_items)} items, total {total}', 
                            request.remote_addr)
         
-        flash('Đơn hàng đã được tạo! Vui lòng chờ xử lý thanh toán.', 'success')
-        return redirect(url_for('order_detail', order_id=order.id))
+        flash('Đơn hàng đã được tạo! Vui lòng quét mã QR để thanh toán.', 'success')
+        return redirect(url_for('payment', order_id=order.id))
     
     return render_template('checkout.html', form=form, cart_items=cart_items, total=total)
+
+@app.route('/payment/<int:order_id>')
+@login_required
+def payment(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id:
+        flash('Không có quyền truy cập đơn hàng này.', 'danger')
+        return redirect(url_for('orders'))
+    
+    payment_settings = PaymentSettings.get_active_settings()
+    
+    if not payment_settings:
+        flash('Hệ thống thanh toán chưa được cấu hình. Vui lòng liên hệ quản trị viên.', 'danger')
+        return redirect(url_for('order_detail', order_id=order.id))
+    
+    payment_content = f"DH{order.id}"
+    order.payment_reference = payment_content
+    db.session.commit()
+    
+    qr_url = generate_vietqr_url(
+        payment_settings.bank_id,
+        payment_settings.account_number,
+        payment_settings.account_name,
+        int(order.total_amount),
+        payment_content,
+        payment_settings.qr_template
+    )
+    
+    return render_template('payment.html', order=order, qr_url=qr_url, 
+                          payment_settings=payment_settings, payment_content=payment_content)
+
+def generate_vietqr_url(bank_id, account_no, account_name, amount, content, template='compact'):
+    import urllib.parse
+    base_url = f"https://img.vietqr.io/image/{bank_id}-{account_no}-{template}.png"
+    params = {
+        'amount': amount,
+        'addInfo': content,
+        'accountName': account_name
+    }
+    return f"{base_url}?{urllib.parse.urlencode(params)}"
+
+@app.route('/payment/<int:order_id>/confirm', methods=['POST'])
+@login_required
+def confirm_payment(order_id):
+    order = Order.query.get_or_404(order_id)
+    if order.user_id != current_user.id and not current_user.has_permission('support'):
+        return jsonify({'success': False, 'message': 'Không có quyền'}), 403
+    
+    order.status = 'processing'
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'confirm_payment', 
+                       f'Marked payment as sent for order {order.id}', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã xác nhận thanh toán. Vui lòng chờ admin xác nhận.'})
+
+@app.route('/admin/order/<int:order_id>/complete-payment', methods=['POST'])
+@role_required('support')
+def admin_complete_payment(order_id):
+    order = Order.query.get_or_404(order_id)
+    
+    for account in order.accounts:
+        account.is_sold = True
+    
+    order.status = 'completed'
+    db.session.commit()
+    
+    AuditLog.create_log(current_user.id, 'complete_payment', 
+                       f'Completed payment for order {order.id}', request.remote_addr)
+    
+    return jsonify({'success': True, 'message': 'Đã xác nhận thanh toán thành công'})
 
 @app.route('/orders')
 @login_required
@@ -453,6 +524,55 @@ def admin_logs():
         page=page, per_page=50, error_out=False
     )
     return render_template('admin/logs.html', logs=logs)
+
+@app.route('/admin/payment-settings', methods=['GET', 'POST'])
+@role_required('admin')
+def admin_payment_settings():
+    settings = PaymentSettings.get_active_settings()
+    
+    if request.method == 'GET':
+        if settings:
+            form = PaymentSettingsForm(
+                bank_id=settings.bank_id,
+                bank_name=settings.bank_name,
+                account_number=settings.account_number,
+                account_name=settings.account_name,
+                qr_template=settings.qr_template
+            )
+        else:
+            form = PaymentSettingsForm()
+    else:
+        form = PaymentSettingsForm()
+    
+    if form.validate_on_submit():
+        if settings:
+            settings.bank_id = form.bank_id.data
+            settings.bank_name = form.bank_name.data
+            settings.account_number = form.account_number.data
+            settings.account_name = form.account_name.data
+            settings.qr_template = form.qr_template.data
+            flash_msg = 'Đã cập nhật cài đặt thanh toán!'
+        else:
+            settings = PaymentSettings(
+                bank_id=form.bank_id.data,
+                bank_name=form.bank_name.data,
+                account_number=form.account_number.data,
+                account_name=form.account_name.data,
+                qr_template=form.qr_template.data,
+                is_active=True
+            )
+            db.session.add(settings)
+            flash_msg = 'Đã thêm cài đặt thanh toán!'
+        
+        db.session.commit()
+        
+        AuditLog.create_log(current_user.id, 'update_payment_settings', 
+                           f'Updated VietQR payment settings', request.remote_addr)
+        
+        flash(flash_msg, 'success')
+        return redirect(url_for('admin_payment_settings'))
+    
+    return render_template('admin/payment_settings.html', form=form, settings=settings)
 
 @app.route('/wishlist')
 @login_required

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card" data-aos="fade-up">
+            <div class="card-body text-center">
+                <h2 class="mb-4"><i class="fas fa-qrcode"></i> Thanh toán đơn hàng #{{ order.id }}</h2>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Quét mã QR bằng ứng dụng ngân hàng để thanh toán
+                </div>
+                
+                <div class="mb-4">
+                    <img src="{{ qr_url }}" alt="VietQR Payment Code" class="img-fluid" style="max-width: 400px; border: 2px solid #ddd; border-radius: 10px; padding: 10px;">
+                </div>
+                
+                <div class="payment-info">
+                    <h5 class="mb-3">Thông tin thanh toán</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <td><strong>Ngân hàng:</strong></td>
+                            <td>{{ payment_settings.bank_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Số tài khoản:</strong></td>
+                            <td><code>{{ payment_settings.account_number }}</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Chủ tài khoản:</strong></td>
+                            <td>{{ payment_settings.account_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Số tiền:</strong></td>
+                            <td><strong class="text-danger">{{ "{:,.0f}".format(order.total_amount) }} ₫</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Nội dung:</strong></td>
+                            <td><code>{{ payment_content }}</code></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="alert alert-warning mt-4">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>LƯU Ý:</strong><br>
+                    - Vui lòng chuyển khoản <strong>ĐÚNG SỐ TIỀN</strong> và <strong>ĐÚNG NỘI DUNG</strong> để hệ thống xử lý tự động<br>
+                    - Nội dung chuyển khoản: <strong>{{ payment_content }}</strong><br>
+                    - Sau khi chuyển khoản, nhấn nút "Đã chuyển khoản" bên dưới
+                </div>
+                
+                <div class="mt-4">
+                    <button onclick="confirmPayment({{ order.id }})" class="btn btn-primary btn-lg">
+                        <i class="fas fa-check"></i> Đã chuyển khoản
+                    </button>
+                    <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left"></i> Xem đơn hàng
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmPayment(orderId) {
+    if (!confirm('Bạn đã chuyển khoản thành công?')) {
+        return;
+    }
+    
+    fetch(`/payment/${orderId}/confirm`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = `/order/${orderId}`;
+            }, 1500);
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Có lỗi xảy ra', 'error');
+    });
+}
+</script>
+{% endblock %}

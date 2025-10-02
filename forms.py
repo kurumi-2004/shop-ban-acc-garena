@@ -52,3 +52,14 @@ class AccountForm(FlaskForm):
     account_password = StringField('Mật khẩu tài khoản game')
     internal_notes = TextAreaField('Ghi chú nội bộ')
     images = MultipleFileField('Hình ảnh tài khoản', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'webp'], 'Chỉ chấp nhận file ảnh!')])
+
+class PaymentSettingsForm(FlaskForm):
+    bank_id = StringField('Mã ngân hàng (BIN)', validators=[DataRequired(), Length(max=20)])
+    bank_name = StringField('Tên ngân hàng', validators=[DataRequired(), Length(max=100)])
+    account_number = StringField('Số tài khoản', validators=[DataRequired(), Length(max=50)])
+    account_name = StringField('Tên chủ tài khoản', validators=[DataRequired(), Length(max=200)])
+    qr_template = SelectField('Mẫu QR', choices=[
+        ('compact', 'Compact'),
+        ('compact2', 'Compact 2'),
+        ('qr_only', 'QR Only')
+    ], default='compact')

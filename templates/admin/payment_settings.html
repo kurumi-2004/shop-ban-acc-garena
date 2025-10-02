@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card" data-aos="zoom-in">
+            <div class="card-body">
+                <h3 class="mb-4">
+                    <i class="fas fa-cog"></i> Cài đặt thanh toán VietQR
+                </h3>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Cấu hình thông tin ngân hàng để nhận thanh toán qua VietQR. 
+                    Khách hàng sẽ quét mã QR và chuyển khoản trực tiếp vào tài khoản của bạn.
+                </div>
+                
+                {% if settings %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i> Đã cấu hình thanh toán VietQR
+                </div>
+                {% endif %}
+                
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.bank_id.label(class="form-label") }}
+                        {{ form.bank_id(class="form-control", placeholder="VD: 970415 (VietinBank)") }}
+                        <small class="text-muted">Mã BIN của ngân hàng. Xem danh sách tại <a href="https://www.vietqr.io/danh-sach-ngan-hang" target="_blank">VietQR</a></small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.bank_name.label(class="form-label") }}
+                        {{ form.bank_name(class="form-control", placeholder="VD: VietinBank") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.account_number.label(class="form-label") }}
+                        {{ form.account_number(class="form-control", placeholder="VD: 1234567890") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.account_name.label(class="form-label") }}
+                        {{ form.account_name(class="form-control", placeholder="VD: NGUYEN VAN A") }}
+                        <small class="text-muted">Tên chủ tài khoản (viết HOA, không dấu)</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.qr_template.label(class="form-label") }}
+                        {{ form.qr_template(class="form-select") }}
+                        <small class="text-muted">Chọn kiểu hiển thị mã QR</small>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Lưu ý:</strong><br>
+                        - Đảm bảo thông tin ngân hàng chính xác để khách hàng có thể thanh toán<br>
+                        - Mã ngân hàng (BIN) phải đúng theo chuẩn VietQR<br>
+                        - Tên chủ tài khoản nên viết HOA, không dấu để hiển thị đúng trên QR
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu cài đặt
+                    </button>
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </form>
+                
+                {% if settings %}
+                <hr class="my-4">
+                <h5>Xem trước mã QR</h5>
+                <div class="text-center mt-3">
+                    <img src="https://img.vietqr.io/image/{{ settings.bank_id }}-{{ settings.account_number }}-{{ settings.qr_template }}.png?amount=100000&addInfo=TEST&accountName={{ settings.account_name }}" 
+                         alt="Preview QR" class="img-fluid" style="max-width: 300px; border: 1px solid #ddd; border-radius: 10px;">
+                    <p class="text-muted mt-2">Ví dụ mã QR cho đơn hàng 100,000 VNĐ</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
