@@ -28,7 +28,7 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
 from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist, PaymentSettings
-from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm
+from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm, ForgotPasswordForm, ResetPasswordForm
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -158,6 +158,52 @@ def logout():
     logout_user()
     flash('Đã đăng xuất thành công.', 'info')
     return redirect(url_for('index'))
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_reset_token()
+            db.session.commit()
+            
+            reset_url = url_for('reset_password', token=token, _external=True)
+            
+            flash(f'Link đặt lại mật khẩu: {reset_url}', 'info')
+            AuditLog.create_log(user.id, 'password_reset_request', f'Requested password reset', request.remote_addr)
+        else:
+            flash('Nếu email tồn tại, link đặt lại mật khẩu đã được gửi.', 'info')
+        
+        return redirect(url_for('login'))
+    
+    return render_template('forgot_password.html', form=form)
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or not user.verify_reset_token(token):
+        flash('Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.', 'danger')
+        return redirect(url_for('forgot_password'))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        user.reset_token = None
+        user.reset_token_expiry = None
+        db.session.commit()
+        
+        AuditLog.create_log(user.id, 'password_reset', 'Password reset successful', request.remote_addr)
+        flash('Mật khẩu đã được đặt lại thành công! Vui lòng đăng nhập.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form, token=token)
 
 @app.route('/cart')
 @login_required

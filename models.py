@@ -14,6 +14,8 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     is_admin = db.Column(db.Boolean, default=False)
     role = db.Column(db.String(20), default='user')
+    reset_token = db.Column(db.String(100))
+    reset_token_expiry = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     orders = db.relationship('Order', backref='user', lazy='dynamic')
@@ -31,6 +33,18 @@ class User(UserMixin, db.Model):
         user_level = role_hierarchy.get(self.role, 0)
         required_level = role_hierarchy.get(required_role, 0)
         return user_level >= required_level
+    
+    def generate_reset_token(self):
+        import secrets
+        from datetime import timedelta
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+        return self.reset_token
+    
+    def verify_reset_token(self, token):
+        if self.reset_token == token and self.reset_token_expiry and self.reset_token_expiry > datetime.utcnow():
+            return True
+        return False
     
     def __repr__(self):
         return f'<User {self.username}>'

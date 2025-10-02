@@ -36,7 +36,13 @@
         </button>
     </form>
     
-    <div class="text-center mt-3">
+    <div class="text-center mt-2">
+        <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">
+            <i class="fas fa-key"></i> Quên mật khẩu?
+        </a>
+    </div>
+    
+    <div class="text-center mt-2">
         <p>Chưa có tài khoản? <a href="{{ url_for('register') }}">Đăng ký ngay</a></p>
     </div>
     

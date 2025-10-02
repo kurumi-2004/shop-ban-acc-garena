@@ -63,3 +63,16 @@ class PaymentSettingsForm(FlaskForm):
         ('compact2', 'Compact 2'),
         ('qr_only', 'QR Only')
     ], default='compact')
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Mật khẩu mới', validators=[
+        DataRequired(),
+        Length(min=6, message='Mật khẩu phải có ít nhất 6 ký tự')
+    ])
+    confirm_password = PasswordField('Xác nhận mật khẩu', validators=[
+        DataRequired(),
+        EqualTo('password', message='Mật khẩu không khớp')
+    ])
