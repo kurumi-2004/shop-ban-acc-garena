@@ -9,7 +9,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        value: postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres
+        value: postgresql+pg8000://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres
       - key: SUPABASE_URL
         value: https://iohaxfkciqvcoxsvzfyh.supabase.co
       - key: SUPABASE_KEY

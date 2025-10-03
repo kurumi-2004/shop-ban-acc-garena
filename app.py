@@ -18,6 +18,15 @@ if not database_url:
     database_url = 'postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres'
     print("Using fallback Supabase database URL")
 
+# Try to use pg8000 driver if psycopg2 fails
+try:
+    import psycopg2
+    print("Using psycopg2 driver")
+except ImportError:
+    print("psycopg2 not available, trying pg8000 driver")
+    if database_url.startswith('postgresql://'):
+        database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/accounts'
