@@ -11,26 +11,37 @@ from extensions import db, login_manager, migrate, cipher_suite, csrf, supabase
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Database configuration with fallback and error handling
-database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    # Fallback to Supabase if DATABASE_URL not set
-    database_url = 'postgresql+pg8000://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres'
-    print("Using fallback Supabase database URL")
+# Database configuration with improved connection handling
+from database_config import get_database_url
 
-# Try to use pg8000 driver if psycopg2 fails
 try:
-    import psycopg2
-    print("Using psycopg2 driver")
-    # Convert to pg8000 if needed for compatibility
-    if database_url.startswith('postgresql://') and 'pg8000' not in database_url:
-        database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
-except ImportError:
-    print("psycopg2 not available, using pg8000 driver")
+    database_url = get_database_url()
+    
+    # Ensure pg8000 driver is used for compatibility
     if database_url.startswith('postgresql://'):
         database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    
+    # Connection pool settings
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+        'connect_args': {
+            'connect_timeout': 10,
+            'application_name': 'shop-ban-acc-garena'
+        }
+    }
+    
+    print(f"✅ Database configured: {database_url[:50]}...")
+    
+except Exception as e:
+    print(f"❌ Database configuration error: {e}")
+    # Fallback to SQLite for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fallback.db'
+    print("Using SQLite fallback database")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/accounts'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024

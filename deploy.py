@@ -10,6 +10,18 @@ from models import User
 def check_database():
     """Check if database is properly initialized"""
     try:
+        # First run connection diagnostics
+        print("Running connection diagnostics...")
+        from check_supabase_connection import check_dns_resolution, check_network_connectivity
+        
+        dns_ok = check_dns_resolution()
+        network_ok = check_network_connectivity()
+        
+        if not (dns_ok and network_ok):
+            print("❌ Network connectivity issues detected")
+            return False
+        
+        # Test database connection
         with app.app_context():
             # Try to query users table
             user_count = User.query.count()
