@@ -33,16 +33,17 @@ csrf.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
-# Create tables on startup
+# Import models first so SQLAlchemy knows about them
+from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist, PaymentSettings
+from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm, ForgotPasswordForm, ResetPasswordForm
+
+# Create tables on startup AFTER importing models
 with app.app_context():
     try:
         db.create_all()
         print("✅ Database tables created/verified on startup")
     except Exception as e:
         print(f"⚠️ Could not create tables on startup: {e}")
-
-from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist, PaymentSettings
-from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm, ForgotPasswordForm, ResetPasswordForm
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
@@ -711,6 +712,35 @@ def health_check():
 def status():
     """Simple status page"""
     return render_template('status.html')
+
+@app.route('/init-db')
+def init_database_route():
+    """Initialize database tables and data"""
+    try:
+        # Create all tables
+        db.create_all()
+        
+        # Check if we need to initialize data
+        user_count = User.query.count()
+        if user_count == 0:
+            from init_db import init_database
+            init_database()
+            return jsonify({
+                'status': 'success',
+                'message': 'Database initialized with sample data',
+                'users_created': User.query.count()
+            })
+        else:
+            return jsonify({
+                'status': 'success', 
+                'message': f'Database already has {user_count} users',
+                'users_count': user_count
+            })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
