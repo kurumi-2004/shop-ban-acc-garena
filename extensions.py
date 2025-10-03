@@ -15,6 +15,12 @@ encryption_key = os.environ.get('ENCRYPTION_KEY', Fernet.generate_key())
 cipher_suite = Fernet(encryption_key)
 
 # Supabase configuration
-SUPABASE_URL = "https://yxivfpnmtmkbaosmkkdo.supabase.co"
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aXZmcG5tdG1rYmFvc21ra2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzU4NjMsImV4cCI6MjA3NTAxMTg2M30.IdS3OBvJpzPd03QWFJ7sB6-pVQrglvmF90SC06m4SQo')
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://iohaxfkciqvcoxsvzfyh.supabase.co')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvaGF4ZmtjaXF2Y294c3Z6ZnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MDA1NDMsImV4cCI6MjA3NTA3NjU0M30.6KNWs3j2dnIW4ZlOJwO6gFOKK_gYxsQSyuuv0wj5_lo')
+
+# Initialize Supabase client
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as e:
+    print(f"Warning: Could not initialize Supabase client: {e}")
+    supabase = None
