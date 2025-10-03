@@ -11,19 +11,22 @@ from extensions import db, login_manager, migrate, cipher_suite, csrf, supabase
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Database configuration with fallback
+# Database configuration with fallback and error handling
 database_url = os.environ.get('DATABASE_URL')
 if not database_url:
     # Fallback to Supabase if DATABASE_URL not set
-    database_url = 'postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres'
+    database_url = 'postgresql+pg8000://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres'
     print("Using fallback Supabase database URL")
 
 # Try to use pg8000 driver if psycopg2 fails
 try:
     import psycopg2
     print("Using psycopg2 driver")
+    # Convert to pg8000 if needed for compatibility
+    if database_url.startswith('postgresql://') and 'pg8000' not in database_url:
+        database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
 except ImportError:
-    print("psycopg2 not available, trying pg8000 driver")
+    print("psycopg2 not available, using pg8000 driver")
     if database_url.startswith('postgresql://'):
         database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
 
@@ -79,37 +82,48 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    page = request.args.get('page', 1, type=int)
-    category = request.args.get('category', '')
-    rank = request.args.get('rank', '')
-    min_price = request.args.get('min_price', type=float)
-    max_price = request.args.get('max_price', type=float)
-    search = request.args.get('search', '')
+    try:
+        page = request.args.get('page', 1, type=int)
+        category = request.args.get('category', '')
+        rank = request.args.get('rank', '')
+        min_price = request.args.get('min_price', type=float)
+        max_price = request.args.get('max_price', type=float)
+        search = request.args.get('search', '')
+        
+        query = GameAccount.query.filter_by(is_sold=False)
+        
+        if category:
+            query = query.filter_by(category=category)
+        if rank:
+            query = query.filter_by(rank=rank)
+        if min_price:
+            query = query.filter(GameAccount.price >= min_price)
+        if max_price:
+            query = query.filter(GameAccount.price <= max_price)
+        if search:
+            query = query.filter(GameAccount.title.ilike(f'%{search}%'))
+        
+        accounts = query.order_by(GameAccount.created_at.desc()).paginate(
+            page=page, per_page=12, error_out=False
+        )
+        
+        categories = db.session.query(GameAccount.category).distinct().all()
+        ranks = db.session.query(GameAccount.rank).distinct().all()
+        
+        return render_template('index.html', 
+                             accounts=accounts,
+                             categories=[c[0] for c in categories],
+                             ranks=[r[0] for r in ranks])
     
-    query = GameAccount.query.filter_by(is_sold=False)
-    
-    if category:
-        query = query.filter_by(category=category)
-    if rank:
-        query = query.filter_by(rank=rank)
-    if min_price:
-        query = query.filter(GameAccount.price >= min_price)
-    if max_price:
-        query = query.filter(GameAccount.price <= max_price)
-    if search:
-        query = query.filter(GameAccount.title.ilike(f'%{search}%'))
-    
-    accounts = query.order_by(GameAccount.created_at.desc()).paginate(
-        page=page, per_page=12, error_out=False
-    )
-    
-    categories = db.session.query(GameAccount.category).distinct().all()
-    ranks = db.session.query(GameAccount.rank).distinct().all()
-    
-    return render_template('index.html', 
-                         accounts=accounts,
-                         categories=[c[0] for c in categories],
-                         ranks=[r[0] for r in ranks])
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        # Return a maintenance page or basic template
+        return render_template('maintenance.html' if os.path.exists('templates/maintenance.html') 
+                             else 'index.html', 
+                             accounts=None, 
+                             categories=[], 
+                             ranks=[],
+                             db_error=True)
 
 @app.route('/account/<int:account_id>')
 def account_detail(account_id):
@@ -672,6 +686,32 @@ def remove_from_wishlist(account_id):
                        f'Removed account {account_id} from wishlist', request.remote_addr)
     
     return jsonify({'success': True, 'message': 'Đã xóa khỏi danh sách yêu thích'})
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        with db.engine.connect() as connection:
+            connection.execute(db.text('SELECT 1'))
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+@app.route('/status')
+def status():
+    """Simple status page"""
+    return render_template('status.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
