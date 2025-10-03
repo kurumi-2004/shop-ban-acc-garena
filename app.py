@@ -33,6 +33,14 @@ csrf.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 
+# Create tables on startup
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Database tables created/verified on startup")
+    except Exception as e:
+        print(f"⚠️ Could not create tables on startup: {e}")
+
 from models import User, GameAccount, Order, CartItem, AuditLog, Wishlist, PaymentSettings
 from forms import LoginForm, RegisterForm, CheckoutForm, AccountForm, PaymentSettingsForm, ForgotPasswordForm, ResetPasswordForm
 

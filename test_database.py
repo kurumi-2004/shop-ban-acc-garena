@@ -10,8 +10,9 @@ def test_database_connection():
     """Test database connection"""
     try:
         with app.app_context():
-            # Test basic connection
-            db.engine.execute('SELECT 1')
+            # Test basic connection using SQLAlchemy 2.0 syntax
+            with db.engine.connect() as connection:
+                connection.execute(db.text('SELECT 1'))
             print("✅ Database connection successful!")
             
             # Test table creation

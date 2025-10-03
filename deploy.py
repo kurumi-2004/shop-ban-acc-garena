@@ -11,8 +11,11 @@ def check_database():
     """Check if database is properly initialized"""
     try:
         with app.app_context():
+            print(f"Database URL: {app.config['SQLALCHEMY_DATABASE_URI'][:50]}...")
+            
             # Create tables if they don't exist
             db.create_all()
+            print("✅ Database tables created/verified")
             
             # Try to query users table
             user_count = User.query.count()
