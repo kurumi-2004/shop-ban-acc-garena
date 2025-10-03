@@ -42,6 +42,15 @@ def initialize_if_needed():
         print(f"❌ Database initialization failed: {e}")
         sys.exit(1)
 
+def run_startup_script():
+    """Run startup script for automatic initialization"""
+    try:
+        from startup import auto_initialize_database
+        return auto_initialize_database()
+    except Exception as e:
+        print(f"❌ Startup script failed: {e}")
+        return False
+
 if __name__ == "__main__":
     print("=== Production Deployment Check ===")
     
@@ -55,9 +64,12 @@ if __name__ == "__main__":
     
     print("✅ Environment variables OK")
     
-    # Check database connection
-    if not check_database():
-        print("🔄 Attempting to initialize database...")
-        initialize_if_needed()
+    # Run startup script for automatic initialization
+    print("🚀 Running startup script...")
+    if not run_startup_script():
+        print("⚠️ Startup script failed, trying manual initialization...")
+        if not check_database():
+            print("🔄 Attempting to initialize database...")
+            initialize_if_needed()
     
     print("✅ Deployment check completed successfully!")

@@ -772,5 +772,30 @@ def reset_database_route():
             'message': str(e)
         }), 500
 
+@app.route('/startup-status')
+def startup_status():
+    """Check startup and database status"""
+    try:
+        user_count = User.query.count()
+        account_count = GameAccount.query.count()
+        payment_count = PaymentSettings.query.count()
+        
+        return jsonify({
+            'status': 'success',
+            'database_status': 'connected',
+            'users': user_count,
+            'accounts': account_count,
+            'payment_settings': payment_count,
+            'initialized': user_count > 0 and account_count > 0,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'database_status': 'disconnected',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
