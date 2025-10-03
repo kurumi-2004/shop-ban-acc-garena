@@ -10,7 +10,14 @@ from extensions import db, login_manager, migrate, cipher_suite, csrf, supabase
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-database_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres')
+
+# Database configuration with fallback
+database_url = os.environ.get('DATABASE_URL')
+if not database_url:
+    # Fallback to Supabase if DATABASE_URL not set
+    database_url = 'postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres'
+    print("Using fallback Supabase database URL")
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/accounts'

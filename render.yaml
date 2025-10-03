@@ -2,21 +2,19 @@ services:
   - type: web
     name: shop-ban-acc-garena
     env: python
-    buildCommand: pip install -r requirements.txt && python init_db.py
-    startCommand: gunicorn app:app
+    runtime: python-3.11.9
+    buildCommand: pip install -r requirements.txt && python deploy.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: shop-db
-          property: connectionString
+        value: postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres
+      - key: SUPABASE_URL
+        value: https://iohaxfkciqvcoxsvzfyh.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvaGF4ZmtjaXF2Y294c3Z6ZnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MDA1NDMsImV4cCI6MjA3NTA3NjU0M30.6KNWs3j2dnIW4ZlOJwO6gFOKK_gYxsQSyuuv0wj5_lo
       - key: FLASK_ENV
         value: production
-
-databases:
-  - name: shop-db
-    databaseName: shop_acc_garena
-    user: shop_user
+      - key: ENCRYPTION_KEY
+        generateValue: true

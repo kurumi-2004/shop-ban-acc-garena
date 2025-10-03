@@ -1,74 +1,129 @@
-# Supabase Integration - Hoàn thành
+# Supabase Integration Guide
 
-## ✅ Đã sửa và cấu hình
+## Overview
+This Flask e-commerce application now supports Supabase integration with both PostgreSQL database and Supabase API features.
 
-### 1. Database Connection
-- **PostgreSQL URL**: `postgresql://postgres:25862586a@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres`
-- **Supabase URL**: `https://iohaxfkciqvcoxsvzfyh.supabase.co`
-- **API Key**: Đã cập nhật với key mới
+## Database Configuration
 
-### 2. Files đã cập nhật
-- `extensions.py` - Cấu hình Supabase client
-- `app.py` - Database URL cho PostgreSQL
-- `requirements.txt` - Thêm psycopg2-binary
-- `test_supabase.py` - Script kiểm tra kết nối
-- `.env.example` - Template environment variables
+### PostgreSQL Connection
+- **Database URL**: `postgresql://postgres:[password]@db.iohaxfkciqvcoxsvzfyh.supabase.co:5432/postgres`
+- **Supabase Project**: `iohaxfkciqvcoxsvzfyh`
+- **Region**: Auto-selected by Supabase
 
-### 3. Database Setup
-- ✅ Tạo tables thành công
-- ✅ 4 user accounts đã được tạo:
-  - Super Admin: `superadmin@shopaccgarena.vn` / `SuperAdmin@2024!Secure`
-  - Admin: `admin@shopaccgarena.vn` / `Admin@2024!Secure`
-  - Support: `support@shopaccgarena.vn` / `Support@2024!Secure`
-  - User Demo: `user@example.com` / `user123`
+### Supabase API
+- **URL**: `https://iohaxfkciqvcoxsvzfyh.supabase.co`
+- **API Key**: Configured in environment variables
 
-## 🚀 Cách sử dụng
+## Setup Instructions
 
-### Chạy ứng dụng
+### 1. Install Dependencies
 ```bash
-python app.py
+pip install -r requirements.txt
 ```
 
-### Kiểm tra kết nối
+### 2. Environment Variables
+Create a `.env` file based on `.env.example`:
+```bash
+cp .env.example .env
+```
+
+Update the following variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_KEY`: Your Supabase anon public key
+- `SECRET_KEY`: Flask secret key
+- `ENCRYPTION_KEY`: For encrypting sensitive data
+
+### 3. Initialize Database
+```bash
+python init_db.py
+```
+
+### 4. Test Connections
 ```bash
 python test_supabase.py
 ```
 
-### Truy cập admin panel
-1. Chạy app: `python app.py`
-2. Mở browser: `http://localhost:5000`
-3. Đăng nhập với tài khoản admin
-4. Truy cập: `http://localhost:5000/admin`
+## Features
 
-## 📊 Tính năng có sẵn
+### Database Models
+- **Users**: User authentication and profiles
+- **GameAccounts**: Game accounts for sale
+- **Orders**: Purchase orders
+- **CartItems**: Shopping cart functionality
+- **AuditLog**: System activity logging
+- **Wishlist**: User wishlist feature
+- **PaymentSettings**: VietQR payment configuration
 
-### Dual Database Support
-- **SQLAlchemy + PostgreSQL**: Cho Flask ORM operations
-- **Supabase API**: Cho real-time features và advanced queries
+### Admin Accounts
+After running `init_db.py`, the following accounts are created:
 
-### Sử dụng Supabase API
-```python
-from extensions import supabase
+**Super Admin**
+- Email: `superadmin@shopaccgarena.vn`
+- Password: `SuperAdmin@2024!Secure`
 
-# Lấy dữ liệu
-response = supabase.table('users').select('*').execute()
+**Admin**
+- Email: `admin@shopaccgarena.vn`
+- Password: `Admin@2024!Secure`
 
-# Thêm dữ liệu  
-response = supabase.table('users').insert({'email': 'test@test.com'}).execute()
+**Support**
+- Email: `support@shopaccgarena.vn`
+- Password: `Support@2024!Secure`
 
-# Cập nhật
-response = supabase.table('users').update({'full_name': 'New Name'}).eq('id', 1).execute()
+**Demo User**
+- Email: `user@example.com`
+- Password: `user123`
+
+### Supabase Features
+- Real-time data synchronization
+- Row Level Security (RLS)
+- API integration for advanced features
+- Backup and monitoring through Supabase dashboard
+
+## Deployment
+
+### Railway
+Configuration in `railway.toml`:
+```toml
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
 ```
 
-### Sử dụng SQLAlchemy (như hiện tại)
-```python
-from models import User
-from extensions import db
+### Render
+Configuration in `render.yaml` with automatic database and environment setup.
 
-# Lấy user
-user = User.query.filter_by(email='test@test.com').first()
+## Security Notes
 
-# Thêm user
-new_user = User(email='test@test.com')
-db.session.add(new_user)
-db.session
+1. **Change default passwords** in production
+2. **Use environment variables** for sensitive data
+3. **Enable RLS** in Supabase for additional security
+4. **Regular backups** through Supabase dashboard
+
+## Troubleshooting
+
+### Connection Issues
+1. Verify database URL and credentials
+2. Check Supabase project status
+3. Ensure firewall allows connections
+4. Test with `python test_supabase.py`
+
+### API Key Issues
+1. Get fresh API key from Supabase dashboard
+2. Update `SUPABASE_KEY` environment variable
+3. Restart application
+
+## Support
+For issues related to this integration, check:
+1. Supabase dashboard logs
+2. Application logs
+3. Database connection status
+4. API key validity
+
+## Version History
+- **v1.0**: Initial Supabase integration
+- **v1.1**: Added comprehensive testing and documentation
