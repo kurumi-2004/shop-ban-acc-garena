@@ -6,42 +6,22 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from extensions import db, login_manager, migrate, cipher_suite, csrf, supabase
+from extensions import db, login_manager, migrate, cipher_suite, csrf
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Database configuration with improved connection handling
-from database_config import get_database_url
+# Database configuration - Use Render's managed PostgreSQL
+database_url = os.environ.get('DATABASE_URL')
 
-try:
-    database_url = get_database_url()
-    
-    # Ensure pg8000 driver is used for compatibility
-    if database_url.startswith('postgresql://'):
-        database_url = database_url.replace('postgresql://', 'postgresql+pg8000://')
-    
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    
-    # Connection pool settings
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 5,
-        'max_overflow': 10,
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'connect_args': {
-            'connect_timeout': 10,
-            'application_name': 'shop-ban-acc-garena'
-        }
-    }
-    
-    print(f"✅ Database configured: {database_url[:50]}...")
-    
-except Exception as e:
-    print(f"❌ Database configuration error: {e}")
-    # Fallback to SQLite for development
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fallback.db'
-    print("Using SQLite fallback database")
+if not database_url:
+    # Fallback for development
+    database_url = 'sqlite:///shop.db'
+    print("Using SQLite for development")
+else:
+    print(f"Using Render PostgreSQL database")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads/accounts'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
