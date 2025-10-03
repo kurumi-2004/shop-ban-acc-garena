@@ -722,20 +722,50 @@ def init_database_route():
         
         # Check if we need to initialize data
         user_count = User.query.count()
+        account_count = GameAccount.query.count()
+        
         if user_count == 0:
             from init_db import init_database
             init_database()
             return jsonify({
                 'status': 'success',
                 'message': 'Database initialized with sample data',
-                'users_created': User.query.count()
+                'users_created': User.query.count(),
+                'accounts_created': GameAccount.query.count()
             })
         else:
             return jsonify({
                 'status': 'success', 
-                'message': f'Database already has {user_count} users',
-                'users_count': user_count
+                'message': f'Database already has {user_count} users and {account_count} accounts',
+                'users_count': user_count,
+                'accounts_count': account_count
             })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/reset-db')
+def reset_database_route():
+    """Reset database and reinitialize with sample data"""
+    try:
+        # Drop all tables
+        db.drop_all()
+        
+        # Create all tables
+        db.create_all()
+        
+        # Initialize with sample data
+        from init_db import init_database
+        init_database()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Database reset and initialized successfully',
+            'users_created': User.query.count(),
+            'accounts_created': GameAccount.query.count()
+        })
     except Exception as e:
         return jsonify({
             'status': 'error',
