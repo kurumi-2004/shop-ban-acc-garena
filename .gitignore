@@ -4,40 +4,50 @@ __pycache__/
 *$py.class
 *.so
 .Python
-.pythonlibs/
 env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv
 venv/
 ENV/
-env.bak/
-venv.bak/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
 
 # Flask
 instance/
 .webassets-cache
-*.db
-*.sqlite3
 
-# Environment variables
-.env
-.env.local
+# Database
+*.sqlite
+*.sqlite3
+*.db
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Logs
+logs/
 *.log
-/tmp/
 
-# Migrations
-migrations/
+# Environment variables
+.env
+.env.local

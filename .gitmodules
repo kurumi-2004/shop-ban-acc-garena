@@ -1,0 +1,3 @@
+[submodule "GameVault"]
+	path = GameVault
+	url = ./GameVault

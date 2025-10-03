@@ -1,0 +1,1 @@
+web: cd GameVault && gunicorn --pythonpath . app:app

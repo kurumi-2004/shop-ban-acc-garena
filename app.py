@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from extensions import db, login_manager, migrate, cipher_suite, csrf
+from extensions import db, login_manager, migrate, cipher_suite, csrf, supabase
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')

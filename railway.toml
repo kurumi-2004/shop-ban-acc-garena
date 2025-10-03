@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "cd GameVault && gunicorn --pythonpath . app:app"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+
+[phases.setup]
+nixPkgs = ["python39"]
