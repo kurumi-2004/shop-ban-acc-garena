@@ -42,6 +42,19 @@ with app.app_context():
     try:
         db.create_all()
         print("✅ Database tables created/verified on startup")
+        
+        # Auto-initialize database if empty
+        user_count = User.query.count()
+        account_count = GameAccount.query.count()
+        
+        if user_count == 0 and account_count == 0:
+            print("🔄 Database is empty, auto-initializing...")
+            from init_db import init_database
+            init_database()
+            print("🎉 Database auto-initialized with sample data!")
+        else:
+            print(f"ℹ️ Database has {user_count} users and {account_count} accounts")
+            
     except Exception as e:
         print(f"⚠️ Could not create tables on startup: {e}")
 
@@ -795,6 +808,33 @@ def startup_status():
             'database_status': 'disconnected',
             'error': str(e),
             'timestamp': datetime.utcnow().isoformat()
+        }), 500
+
+@app.route('/force-init')
+def force_init():
+    """Force initialize database with sample data"""
+    try:
+        # Always run initialization
+        from init_db import init_database
+        
+        # Drop and recreate tables
+        db.drop_all()
+        db.create_all()
+        
+        # Initialize with sample data
+        init_database()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Database force initialized successfully',
+            'users_created': User.query.count(),
+            'accounts_created': GameAccount.query.count(),
+            'payment_settings_created': PaymentSettings.query.count()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 if __name__ == '__main__':
